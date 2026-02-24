@@ -1,0 +1,42 @@
+.about-area {
+   padding: 40px 0 60px;
+}
+
+.about-page-title {
+   font-size: 32px;
+   font-weight: 700;
+   color: #1e293b;
+   margin-bottom: 30px;
+}
+
+.about-card {
+   background: #fff;
+   border: 1px solid #e2e8f0;
+   border-radius: 12px;
+   padding: 30px;
+   margin-bottom: 24px;
+   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.about-card h3 {
+   font-size: 22px;
+   font-weight: 700;
+   color: #1e293b;
+   margin-bottom: 16px;
+}
+
+.about-card h3 i {
+   color: #2563eb;
+   margin-right: 10px;
+}
+
+.about-card p {
+   font-size: 15px;
+   line-height: 1.7;
+   color: #475569;
+}
+
+.about-placeholder {
+   color: #94a3b8;
+   font-style: italic;
+}

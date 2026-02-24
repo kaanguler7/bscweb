@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+
+# Local logs / runtime artifacts
+storage/logs/*.log
+storage/php-server.err.log
+storage/php-server.out.log
+
+# Local tooling bundle (not required in production repo)
+tools/php/

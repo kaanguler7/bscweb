@@ -1,0 +1,25 @@
+{
+    "name": "bsc/ninico-mvc",
+    "description": "BSC TV yedek parca MVC",
+    "require": {
+        "vlucas/phpdotenv": "^5.6",
+        "intervention/image": "^3.11"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "scripts": {
+        "init-db": "php database/init_mysql.php",
+        "init-db-mysql": "php database/init_mysql.php",
+        "add-mysql-indexes": "php database/add_mysql_indexes.php",
+        "change-admin-password": "php database/change_admin_password.php"
+    },
+    "authors": [
+        {
+            "name": "BSC",
+            "email": "dev@example.com"
+        }
+    ]
+}
