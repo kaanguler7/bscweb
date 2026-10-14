@@ -307,7 +307,7 @@ final class AuthController extends Controller
         }
 
         $stock = (int) ($product['stock'] ?? 0);
-        if ($stock <= 0) {
+        if ($stock <= 0 || (float) ($product['price'] ?? 0) <= 0) {
             return;
         }
 

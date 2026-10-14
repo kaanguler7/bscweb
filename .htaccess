@@ -1,0 +1,27 @@
+Options -Indexes
+
+<FilesMatch "(^\.|\.(env|ini|log|sql|sqlite|zip|tar|gz|bak|old|dist|phar|lock|ps1|md)$)">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(composer\.(json|lock)|config\.php|phpunit\.xml)$">
+    Require all denied
+</FilesMatch>
+
+RewriteEngine On
+
+# Development, backup and dependency files must never be served publicly.
+RewriteRule ^(?:\.git|app|database|tests|tools|vendor)(?:/|$) - [F,L,NC]
+RewriteRule ^storage/logs(?:/|$) - [F,L,NC]
+
+# Keep one public origin so Google does not split signals between host/protocol variants.
+RewriteCond %{HTTP_HOST} !^www\.bscelektronik\.com$ [NC]
+RewriteRule ^ https://www.bscelektronik.com%{REQUEST_URI} [R=301,L,NE]
+
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+RewriteRule ^ https://www.bscelektronik.com%{REQUEST_URI} [R=301,L,NE]
+
+# Public SEO endpoints backed by the existing PHP routes.
+RewriteRule ^sitemap\.xml$ index.php?route=sitemap.xml [L,QSA]
+RewriteRule ^robots\.txt$ index.php?route=robots.txt [L,QSA]

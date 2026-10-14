@@ -27,20 +27,21 @@ CREATE TABLE IF NOT EXISTS part_codes (
 CREATE TABLE IF NOT EXISTS products (
   id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(180) NOT NULL,
-  category_id INT NULL,
-  brand_id INT NULL,
+  description TEXT NULL,
+  category_id INT NOT NULL,
+  brand_id INT NOT NULL,
   model_id INT NULL,
-  part_code_id INT NULL,
+  part_code_id INT NOT NULL,
   price DECIMAL(10,2) NOT NULL DEFAULT 0,
   stock INT NOT NULL DEFAULT 0,
   image_path VARCHAR(255) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_products_name (name),
-  CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-  CONSTRAINT fk_products_brand FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL,
+  CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_products_brand FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE RESTRICT,
   CONSTRAINT fk_products_model FOREIGN KEY (model_id) REFERENCES product_models(id) ON DELETE SET NULL,
-  CONSTRAINT fk_products_part_code FOREIGN KEY (part_code_id) REFERENCES part_codes(id) ON DELETE SET NULL
+  CONSTRAINT fk_products_part_code FOREIGN KEY (part_code_id) REFERENCES part_codes(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS technical_spec_definitions (

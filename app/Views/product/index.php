@@ -1,6 +1,6 @@
 <?php use App\Models\Product; ?>
 <section class="breadcrumb__area include-bg pt-25 pb-25" style="background-image:url('assets/img/banner/breadcrumb-01.jpg')">
-   <div class="container"><h2 class="text-white mb-0">Ürünler</h2></div>
+   <div class="container"><h1 class="text-white mb-0"><?= htmlspecialchars((string) $listingHeading, ENT_QUOTES, 'UTF-8') ?></h1></div>
 </section>
 
 <section class="shop-area pt-35 pb-70">
@@ -12,6 +12,9 @@
             <a href="index.php?route=products&category=<?= (int) $crumb['id'] ?>"><?= htmlspecialchars($crumb['name'], ENT_QUOTES, 'UTF-8') ?></a>
          <?php endforeach; ?>
       </div>
+      <?php if (empty($query)): ?>
+         <p class="mb-25"><?= htmlspecialchars((string) $categoryIntro, ENT_QUOTES, 'UTF-8') ?></p>
+      <?php endif; ?>
 
       <div class="row g-4">
          <div class="col-xl-3 col-lg-4">

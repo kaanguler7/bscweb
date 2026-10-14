@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Models\Category;
 use App\Models\Product;
 
 final class SeoController extends Controller
@@ -10,51 +11,43 @@ final class SeoController extends Controller
     public function sitemap(): void
     {
         $baseUrl = $this->baseAppUrl();
-        $now = gmdate('c');
+        $productEntries = Product::sitemapEntries();
+        $latestProductModification = $this->latestModification($productEntries);
 
         $urls = [
             [
-                'loc' => $baseUrl . '/index.php?route=home',
-                'lastmod' => $now,
-                'changefreq' => 'daily',
-                'priority' => '1.0',
+                'loc' => $baseUrl . '/',
+                'lastmod' => $latestProductModification,
             ],
             [
                 'loc' => $baseUrl . '/index.php?route=products',
-                'lastmod' => $now,
-                'changefreq' => 'hourly',
-                'priority' => '0.9',
+                'lastmod' => $latestProductModification,
             ],
             [
                 'loc' => $baseUrl . '/index.php?route=about',
-                'lastmod' => $now,
-                'changefreq' => 'monthly',
-                'priority' => '0.3',
+                'lastmod' => null,
             ],
             [
                 'loc' => $baseUrl . '/index.php?route=contact',
-                'lastmod' => $now,
-                'changefreq' => 'monthly',
-                'priority' => '0.4',
+                'lastmod' => null,
             ],
         ];
 
-        foreach (Product::sitemapEntries() as $entry) {
-            $updatedAt = trim((string) ($entry['updated_at'] ?? ''));
-            $createdAt = trim((string) ($entry['created_at'] ?? ''));
-            $lastmod = $updatedAt !== '' ? $updatedAt : $createdAt;
-            if ($lastmod === '') {
-                $lastmod = $now;
-            } else {
-                $timestamp = strtotime($lastmod);
-                $lastmod = $timestamp !== false ? gmdate('c', $timestamp) : $now;
+        foreach (Category::all() as $category) {
+            $categoryId = (int) $category['id'];
+            if (!Category::hasProducts($categoryId) && !Category::hasChildren($categoryId)) {
+                continue;
             }
+            $urls[] = [
+                'loc' => $baseUrl . '/index.php?route=products&category=' . $categoryId,
+                'lastmod' => $latestProductModification,
+            ];
+        }
 
+        foreach ($productEntries as $entry) {
             $urls[] = [
                 'loc' => $baseUrl . '/index.php?route=product&id=' . (int) $entry['id'],
-                'lastmod' => $lastmod,
-                'changefreq' => 'weekly',
-                'priority' => '0.8',
+                'lastmod' => $this->entryModification($entry),
             ];
         }
 
@@ -64,9 +57,9 @@ final class SeoController extends Controller
         foreach ($urls as $url) {
             echo '  <url>' . "\n";
             echo '    <loc>' . htmlspecialchars((string) $url['loc'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</loc>' . "\n";
-            echo '    <lastmod>' . htmlspecialchars((string) $url['lastmod'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</lastmod>' . "\n";
-            echo '    <changefreq>' . htmlspecialchars((string) $url['changefreq'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</changefreq>' . "\n";
-            echo '    <priority>' . htmlspecialchars((string) $url['priority'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</priority>' . "\n";
+            if (!empty($url['lastmod'])) {
+                echo '    <lastmod>' . htmlspecialchars((string) $url['lastmod'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</lastmod>' . "\n";
+            }
             echo '  </url>' . "\n";
         }
         echo '</urlset>';
@@ -81,11 +74,47 @@ final class SeoController extends Controller
         echo "User-agent: *\n";
         echo "Allow: /\n";
         echo "Disallow: /index.php?route=admin/\n";
-        echo "Disallow: /index.php?route=auth/\n";
-        echo "Disallow: /index.php?route=cart\n";
-        echo "Disallow: /index.php?route=account/\n";
-        echo 'Sitemap: ' . $baseUrl . "/index.php?route=sitemap.xml\n";
+        echo "Disallow: /index.php?route=search/suggest\n";
+        echo 'Sitemap: ' . $baseUrl . "/sitemap.xml\n";
         exit;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $entries
+     */
+    private function latestModification(array $entries): ?string
+    {
+        $latestTimestamp = null;
+        foreach ($entries as $entry) {
+            $lastmod = $this->entryModification($entry);
+            if ($lastmod === null) {
+                continue;
+            }
+
+            $timestamp = strtotime($lastmod);
+            if ($timestamp !== false && ($latestTimestamp === null || $timestamp > $latestTimestamp)) {
+                $latestTimestamp = $timestamp;
+            }
+        }
+
+        return $latestTimestamp !== null ? gmdate('c', $latestTimestamp) : null;
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     */
+    private function entryModification(array $entry): ?string
+    {
+        $updatedAt = trim((string) ($entry['updated_at'] ?? ''));
+        $createdAt = trim((string) ($entry['created_at'] ?? ''));
+        $value = $updatedAt !== '' ? $updatedAt : $createdAt;
+        if ($value === '') {
+            return null;
+        }
+
+        $timestamp = strtotime($value);
+
+        return $timestamp !== false ? gmdate('c', $timestamp) : null;
     }
 
     private function baseAppUrl(): string

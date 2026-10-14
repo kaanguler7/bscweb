@@ -4,7 +4,10 @@ namespace App\Models;
 
 use App\Core\App;
 use App\Core\Database;
+use App\Support\ProductCode;
 use PDO;
+use RuntimeException;
+use Throwable;
 
 final class Product
 {
@@ -293,78 +296,120 @@ final class Product
 
     public static function create(array $data): int
     {
-        $brandId = self::ensureBrandId(self::cleanText($data['brand'] ?? null));
-        $modelId = self::ensureModelId(self::cleanText($data['model'] ?? null), $brandId);
-        $partCodeId = self::ensurePartCodeId(self::cleanText($data['part_code'] ?? null));
+        $data = self::validatedWriteData($data);
+        $pdo = self::pdo();
+        $ownsTransaction = !$pdo->inTransaction();
 
-        if (self::isSqlSrv()) {
-            $sql = 'INSERT INTO products (name, category_id, brand_id, model_id, part_code_id, price, stock, image_path, created_at, updated_at)
-                    VALUES (:name, :category_id, :brand_id, :model_id, :part_code_id, :price, :stock, :image_path, GETDATE(), GETDATE())';
-        } else {
-            $sql = 'INSERT INTO products (name, category_id, brand_id, model_id, part_code_id, price, stock, image_path, created_at, updated_at)
-                    VALUES (:name, :category_id, :brand_id, :model_id, :part_code_id, :price, :stock, :image_path, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)';
+        if ($ownsTransaction) {
+            $pdo->beginTransaction();
         }
-        $stmt = self::pdo()->prepare($sql);
-        $stmt->bindValue(':name', (string) $data['name']);
-        $stmt->bindValue(':category_id', $data['category_id'], $data['category_id'] === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':brand_id', $brandId, $brandId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':model_id', $modelId, $modelId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':part_code_id', $partCodeId, $partCodeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':price', (float) ($data['price'] ?? 0));
-        $stmt->bindValue(':stock', (int) ($data['stock'] ?? 0), PDO::PARAM_INT);
-        $stmt->bindValue(':image_path', $data['image_path']);
-        $stmt->execute();
 
-        $id = (int) self::pdo()->lastInsertId();
-        self::saveTechnicalValues($id, $data['technical'] ?? []);
+        try {
+            $brandId = self::ensureBrandId($data['brand']);
+            $modelId = self::ensureModelId($data['model'], $brandId);
+            $partCodeId = self::ensurePartCodeId($data['part_code']);
 
-        return $id;
+            if (self::isSqlSrv()) {
+                $sql = 'INSERT INTO products (name, description, category_id, brand_id, model_id, part_code_id, price, stock, image_path, created_at, updated_at)
+                        VALUES (:name, :description, :category_id, :brand_id, :model_id, :part_code_id, :price, :stock, :image_path, GETDATE(), GETDATE())';
+            } else {
+                $sql = 'INSERT INTO products (name, description, category_id, brand_id, model_id, part_code_id, price, stock, image_path, created_at, updated_at)
+                        VALUES (:name, :description, :category_id, :brand_id, :model_id, :part_code_id, :price, :stock, :image_path, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)';
+            }
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':name', $data['name']);
+            $stmt->bindValue(':description', $data['description'], $data['description'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            $stmt->bindValue(':category_id', $data['category_id'], PDO::PARAM_INT);
+            $stmt->bindValue(':brand_id', $brandId, PDO::PARAM_INT);
+            $stmt->bindValue(':model_id', $modelId, $modelId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            $stmt->bindValue(':part_code_id', $partCodeId, PDO::PARAM_INT);
+            $stmt->bindValue(':price', $data['price']);
+            $stmt->bindValue(':stock', $data['stock'], PDO::PARAM_INT);
+            $stmt->bindValue(':image_path', $data['image_path']);
+            $stmt->execute();
+
+            $id = (int) $pdo->lastInsertId();
+            self::saveTechnicalValues($id, $data['technical']);
+
+            if ($ownsTransaction) {
+                $pdo->commit();
+            }
+
+            return $id;
+        } catch (Throwable $exception) {
+            if ($ownsTransaction && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public static function update(int $id, array $data): void
     {
-        $brandId = self::ensureBrandId(self::cleanText($data['brand'] ?? null));
-        $modelId = self::ensureModelId(self::cleanText($data['model'] ?? null), $brandId);
-        $partCodeId = self::ensurePartCodeId(self::cleanText($data['part_code'] ?? null));
+        $data = self::validatedWriteData($data);
+        $pdo = self::pdo();
+        $ownsTransaction = !$pdo->inTransaction();
 
-        if (self::isSqlSrv()) {
-            $sql = 'UPDATE products SET
-                        name = :name,
-                        category_id = :category_id,
-                        brand_id = :brand_id,
-                        model_id = :model_id,
-                        part_code_id = :part_code_id,
-                        price = :price,
-                        stock = :stock,
-                        image_path = :image_path,
-                        updated_at = GETDATE()
-                    WHERE id = :id';
-        } else {
-            $sql = 'UPDATE products SET
-                        name = :name,
-                        category_id = :category_id,
-                        brand_id = :brand_id,
-                        model_id = :model_id,
-                        part_code_id = :part_code_id,
-                        price = :price,
-                        stock = :stock,
-                        image_path = :image_path,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id';
+        if ($ownsTransaction) {
+            $pdo->beginTransaction();
         }
-        $stmt = self::pdo()->prepare($sql);
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':name', (string) $data['name']);
-        $stmt->bindValue(':category_id', $data['category_id'], $data['category_id'] === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':brand_id', $brandId, $brandId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':model_id', $modelId, $modelId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':part_code_id', $partCodeId, $partCodeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':price', (float) ($data['price'] ?? 0));
-        $stmt->bindValue(':stock', (int) ($data['stock'] ?? 0), PDO::PARAM_INT);
-        $stmt->bindValue(':image_path', $data['image_path']);
-        $stmt->execute();
 
-        self::saveTechnicalValues($id, $data['technical'] ?? []);
+        try {
+            $brandId = self::ensureBrandId($data['brand']);
+            $modelId = self::ensureModelId($data['model'], $brandId);
+            $partCodeId = self::ensurePartCodeId($data['part_code']);
+
+            if (self::isSqlSrv()) {
+                $sql = 'UPDATE products SET
+                            name = :name,
+                            description = :description,
+                            category_id = :category_id,
+                            brand_id = :brand_id,
+                            model_id = :model_id,
+                            part_code_id = :part_code_id,
+                            price = :price,
+                            stock = :stock,
+                            image_path = :image_path,
+                            updated_at = GETDATE()
+                        WHERE id = :id';
+            } else {
+                $sql = 'UPDATE products SET
+                            name = :name,
+                            description = :description,
+                            category_id = :category_id,
+                            brand_id = :brand_id,
+                            model_id = :model_id,
+                            part_code_id = :part_code_id,
+                            price = :price,
+                            stock = :stock,
+                            image_path = :image_path,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :id';
+            }
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->bindValue(':name', $data['name']);
+            $stmt->bindValue(':description', $data['description'], $data['description'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            $stmt->bindValue(':category_id', $data['category_id'], PDO::PARAM_INT);
+            $stmt->bindValue(':brand_id', $brandId, PDO::PARAM_INT);
+            $stmt->bindValue(':model_id', $modelId, $modelId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            $stmt->bindValue(':part_code_id', $partCodeId, PDO::PARAM_INT);
+            $stmt->bindValue(':price', $data['price']);
+            $stmt->bindValue(':stock', $data['stock'], PDO::PARAM_INT);
+            $stmt->bindValue(':image_path', $data['image_path']);
+            $stmt->execute();
+
+            self::saveTechnicalValues($id, $data['technical']);
+
+            if ($ownsTransaction) {
+                $pdo->commit();
+            }
+        } catch (Throwable $exception) {
+            if ($ownsTransaction && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public static function delete(int $id): void
@@ -375,8 +420,8 @@ final class Product
 
     public static function partCodeExists(?string $partCode, ?int $ignoreId = null): bool
     {
-        $partCode = self::cleanText($partCode);
-        if ($partCode === null) {
+        $partCode = ProductCode::normalize($partCode);
+        if ($partCode === '') {
             return false;
         }
 
@@ -874,11 +919,9 @@ final class Product
         return (int) self::pdo()->lastInsertId();
     }
 
-    private static function ensurePartCodeId(?string $code): ?int
+    private static function ensurePartCodeId(string $code): int
     {
-        if ($code === null) {
-            return null;
-        }
+        $code = ProductCode::requireValid($code);
 
         if (self::isSqlSrv()) {
             $select = self::pdo()->prepare('SELECT TOP 1 id FROM part_codes WHERE LOWER(code) = LOWER(:code)');
@@ -901,6 +944,71 @@ final class Product
     {
         $value = trim((string) $value);
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * @return array{
+     *   name: string,
+     *   category_id: int,
+     *   brand: string,
+     *   model: ?string,
+     *   part_code: string,
+     *   price: float,
+     *   stock: int,
+     *   image_path: string,
+     *   technical: array<string, mixed>
+     * }
+     */
+    private static function validatedWriteData(array $data): array
+    {
+        $name = self::cleanText($data['name'] ?? null);
+        $description = self::cleanText($data['description'] ?? null);
+        $brand = self::cleanText($data['brand'] ?? null);
+        $model = self::cleanText($data['model'] ?? null);
+        $partCode = ProductCode::requireValid($data['part_code'] ?? null);
+        $categoryId = (int) ($data['category_id'] ?? 0);
+        $price = (float) ($data['price'] ?? 0);
+        $stock = (int) ($data['stock'] ?? -1);
+        $imagePath = self::cleanText($data['image_path'] ?? null);
+        $technical = isset($data['technical']) && is_array($data['technical']) ? $data['technical'] : [];
+
+        if ($name === null || mb_strlen($name, 'UTF-8') > 180) {
+            throw new RuntimeException('Ürün adı zorunludur ve en fazla 180 karakter olabilir.');
+        }
+        if ($description !== null && mb_strlen($description, 'UTF-8') > 5000) {
+            throw new RuntimeException('Ürün açıklaması en fazla 5000 karakter olabilir.');
+        }
+        if ($brand === null || mb_strlen($brand, 'UTF-8') > 120) {
+            throw new RuntimeException('Marka zorunludur ve en fazla 120 karakter olabilir.');
+        }
+        if ($model !== null && mb_strlen($model, 'UTF-8') > 160) {
+            throw new RuntimeException('Model en fazla 160 karakter olabilir.');
+        }
+        if ($categoryId <= 0) {
+            throw new RuntimeException('Kategori zorunludur.');
+        }
+        if ($price <= 0) {
+            throw new RuntimeException('Yayınlanan ürünün fiyatı 0 TL olamaz.');
+        }
+        if ($stock < 0) {
+            throw new RuntimeException('Stok 0 veya daha büyük olmalıdır.');
+        }
+        if ($imagePath === null) {
+            throw new RuntimeException('Ürün fotoğrafı zorunludur.');
+        }
+
+        return [
+            'name' => $name,
+            'description' => $description,
+            'category_id' => $categoryId,
+            'brand' => $brand,
+            'model' => $model,
+            'part_code' => $partCode,
+            'price' => $price,
+            'stock' => $stock,
+            'image_path' => $imagePath,
+            'technical' => $technical,
+        ];
     }
 
     private static function categoryInClause(int $categoryId, string $prefix): array

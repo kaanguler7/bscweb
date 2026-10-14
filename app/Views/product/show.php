@@ -3,8 +3,10 @@
 $image = $product['image_path'] ?: 'assets/img/product/home-one/product-1.jpg';
 $userId = \App\Core\UserAuth::id();
 $partCodeValue = trim((string) ($product['part_code'] ?? '-'));
+$displayNameValue = trim((string) ($displayName ?? $product['name'] ?? ''));
 $whatsappPhone = '905359714587';
 $seoCodes = isset($seoCodes) && is_array($seoCodes) ? $seoCodes : [];
+$isPurchasable = (int) ($product['stock'] ?? 0) > 0 && (float) ($product['price'] ?? 0) > 0;
 ?>
 <section class="shop-details-area pt-50 pb-50">
    <div class="container">
@@ -14,12 +16,12 @@ $seoCodes = isset($seoCodes) && is_array($seoCodes) ? $seoCodes : [];
                <?php if ((int) $product['stock'] <= 0): ?>
                   <span class="out-of-stock-ribbon">Stokta Yok</span>
                <?php endif; ?>
-               <img class="detail-image-zoom-target" src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>">
+               <img class="detail-image-zoom-target" src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($displayNameValue, ENT_QUOTES, 'UTF-8') ?>">
             </div>
          </div>
 
          <div class="col-lg-7">
-            <h2 class="detail-title"><?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+            <h1 class="detail-title"><?= htmlspecialchars($displayNameValue, ENT_QUOTES, 'UTF-8') ?></h1>
 
             <div class="detail-info">
                <p><strong>Marka:</strong> <?= htmlspecialchars((string) ($product['brand'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></p>
@@ -47,12 +49,17 @@ $seoCodes = isset($seoCodes) && is_array($seoCodes) ? $seoCodes : [];
 
             <hr class="detail-divider">
 
-            <div class="detail-price"><?= Product::priceWithKdvFormatted((float) $product['price']) ?></div>
-            <div class="detail-kdv-note">
-               <?= Product::priceFormatted((float) $product['price']) ?> + KDV (<?= Product::kdvFormatted((float) $product['price']) ?>)
-            </div>
+            <?php if ((float) ($product['price'] ?? 0) > 0): ?>
+               <div class="detail-price"><?= Product::priceWithKdvFormatted((float) $product['price']) ?></div>
+               <div class="detail-kdv-note">
+                  <?= Product::priceFormatted((float) $product['price']) ?> + KDV (<?= Product::kdvFormatted((float) $product['price']) ?>)
+               </div>
+            <?php else: ?>
+               <div class="detail-price">Fiyat için iletişime geçin</div>
+               <div class="detail-kdv-note">Bu ürün, geçerli fiyat girilene kadar internetten siparişe kapalıdır.</div>
+            <?php endif; ?>
 
-            <?php if ((int) $product['stock'] > 0): ?>
+            <?php if ($isPurchasable): ?>
                <?php if ($userId !== null): ?>
                   <form method="post" action="index.php?route=cart/add">
                      <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
@@ -68,7 +75,7 @@ $seoCodes = isset($seoCodes) && is_array($seoCodes) ? $seoCodes : [];
                      action="index.php"
                      class="js-guest-cart-choice-form"
                      data-whatsapp-phone="<?= htmlspecialchars($whatsappPhone, ENT_QUOTES, 'UTF-8') ?>"
-                     data-product-name="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8') ?>"
+                     data-product-name="<?= htmlspecialchars($displayNameValue, ENT_QUOTES, 'UTF-8') ?>"
                      data-part-code="<?= htmlspecialchars($partCodeValue, ENT_QUOTES, 'UTF-8') ?>"
                      data-product-url="index.php?route=product&id=<?= (int) $product['id'] ?>"
                   >
@@ -94,6 +101,8 @@ $seoCodes = isset($seoCodes) && is_array($seoCodes) ? $seoCodes : [];
                      </div>
                   </div>
                <?php endif; ?>
+            <?php elseif ((int) ($product['stock'] ?? 0) > 0): ?>
+               <a class="btn btn-success mt-3" href="https://wa.me/<?= htmlspecialchars($whatsappPhone, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer">Fiyat bilgisi için WhatsApp</a>
             <?php endif; ?>
 
             <div class="mt-3">
@@ -117,6 +126,12 @@ $seoCodes = isset($seoCodes) && is_array($seoCodes) ? $seoCodes : [];
       </div>
 
       <div class="spec-wrap">
+         <?php if (trim((string) ($product['description'] ?? '')) !== ''): ?>
+            <section class="mb-4" aria-labelledby="product-description-heading">
+               <h2 id="product-description-heading">Ürün Açıklaması</h2>
+               <p><?= nl2br(htmlspecialchars((string) $product['description'], ENT_QUOTES, 'UTF-8')) ?></p>
+            </section>
+         <?php endif; ?>
          <div class="row g-3">
             <div class="col-lg-8">
                <table class="spec-table">

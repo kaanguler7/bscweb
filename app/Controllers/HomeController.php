@@ -16,10 +16,12 @@ final class HomeController extends Controller
         $userId = UserAuth::id();
 
         $this->view('home/index', [
-            'pageTitle' => 'BSC Elektronik | TV Yedek Parcalari',
+            'pageTitle' => 'BSC Elektronik | TV Yedek Parçaları',
             'products' => $products,
             'categories' => Category::tree(),
             'favoriteIds' => $userId !== null ? Wishlist::productIdsForUser($userId) : [],
+            'metaDescription' => 'TV anakartı, power board, T-Con, inverter, LED bar, panel ve diğer televizyon yedek parçalarını parça koduyla BSC Elektronik\'te bulun.',
+            'canonicalUrl' => $this->applicationBaseUrl() . '/',
         ]);
     }
 }

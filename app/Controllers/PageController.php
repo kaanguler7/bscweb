@@ -10,6 +10,8 @@ final class PageController extends Controller
     {
         $this->view('page/about', [
             'pageTitle' => 'Hakkımızda | BSC Elektronik',
+            'metaDescription' => 'BSC Elektronik, televizyon yedek parçalarında ürün kodu ve model uyumluluğuna odaklanan uzman tedarikçidir.',
+            'canonicalUrl' => $this->absoluteRouteUrl('about'),
         ]);
     }
 
@@ -17,6 +19,8 @@ final class PageController extends Controller
     {
         $this->view('page/contact', [
             'pageTitle' => 'İletişim | BSC Elektronik',
+            'metaDescription' => 'TV yedek parça, ürün kodu ve sipariş sorularınız için BSC Elektronik ile iletişime geçin.',
+            'canonicalUrl' => $this->absoluteRouteUrl('contact'),
         ]);
     }
 }

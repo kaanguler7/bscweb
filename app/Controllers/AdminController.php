@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Visitor;
 use App\Services\ProductImageService;
+use App\Support\ProductCode;
 use RuntimeException;
 use Throwable;
 
@@ -72,10 +73,10 @@ final class AdminController extends Controller
                 throw new RuntimeException('Bu parça kodu zaten kayıtlı.');
             }
 
-            $data['image_path'] = null;
-            if (isset($_FILES['image']) && (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-                $data['image_path'] = $this->imageService->storeUploadedImage($_FILES['image']);
+            if (!isset($_FILES['image']) || (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                throw new RuntimeException('Yeni ürün için ürün fotoğrafı zorunludur.');
             }
+            $data['image_path'] = $this->imageService->storeUploadedImage($_FILES['image']);
             Product::create($data);
 
             $this->flash('success', 'Ürün başarıyla eklendi.');
@@ -561,7 +562,8 @@ final class AdminController extends Controller
     private function validatedPayload(): array
     {
         $name = trim((string) ($_POST['name'] ?? ''));
-        $partCode = trim((string) ($_POST['part_code'] ?? ''));
+        $description = trim((string) ($_POST['description'] ?? ''));
+        $partCode = ProductCode::requireValid($_POST['part_code'] ?? '');
         $brand = trim((string) ($_POST['brand'] ?? ''));
         $model = trim((string) ($_POST['model'] ?? ''));
         $categoryIdRaw = trim((string) ($_POST['category_id'] ?? ''));
@@ -575,35 +577,50 @@ final class AdminController extends Controller
         if ($name === '') {
             throw new RuntimeException('Ürün adı zorunludur.');
         }
-
-        $categoryId = null;
-        if ($categoryIdRaw !== '') {
-            $categoryId = (int) $categoryIdRaw;
-            if ($categoryId <= 0 || Category::find($categoryId) === null) {
-                throw new RuntimeException('Seçilen kategori geçersiz.');
-            }
+        if (mb_strlen($name, 'UTF-8') > 180) {
+            throw new RuntimeException('Ürün adı en fazla 180 karakter olabilir.');
+        }
+        if (mb_strlen($description, 'UTF-8') > 5000) {
+            throw new RuntimeException('Ürün açıklaması en fazla 5000 karakter olabilir.');
+        }
+        if ($brand === '') {
+            throw new RuntimeException('Marka zorunludur.');
+        }
+        if (mb_strlen($brand, 'UTF-8') > 120) {
+            throw new RuntimeException('Marka en fazla 120 karakter olabilir.');
+        }
+        if (mb_strlen($model, 'UTF-8') > 160) {
+            throw new RuntimeException('Model en fazla 160 karakter olabilir.');
         }
 
-        $price = 0.0;
-        if ($priceRaw !== '') {
-            $price = (float) $priceRaw;
-            if ($price < 0) {
-                throw new RuntimeException('Fiyat negatif olamaz.');
-            }
+        if ($categoryIdRaw === '') {
+            throw new RuntimeException('Kategori zorunludur.');
+        }
+        $categoryId = (int) $categoryIdRaw;
+        if ($categoryId <= 0 || Category::find($categoryId) === null) {
+            throw new RuntimeException('Seçilen kategori geçersiz.');
         }
 
-        $stock = 0;
-        if ($stockRaw !== '') {
-            $stock = (int) $stockRaw;
-            if ($stock < 0) {
-                throw new RuntimeException('Stok negatif olamaz.');
-            }
+        $normalizedPrice = str_replace(',', '.', $priceRaw);
+        if ($normalizedPrice === '' || !is_numeric($normalizedPrice)) {
+            throw new RuntimeException('Geçerli bir fiyat girin.');
         }
+        $price = (float) $normalizedPrice;
+        if ($price <= 0) {
+            throw new RuntimeException('Yayınlanan ürünün fiyatı 0 TL olamaz.');
+        }
+
+        $validatedStock = filter_var($stockRaw, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        if ($validatedStock === false) {
+            throw new RuntimeException('Stok 0 veya daha büyük bir tam sayı olmalıdır.');
+        }
+        $stock = (int) $validatedStock;
 
         return [
             'name' => $name,
-            'part_code' => $partCode === '' ? null : $partCode,
-            'brand' => $brand === '' ? null : $brand,
+            'description' => $description === '' ? null : $description,
+            'part_code' => $partCode,
+            'brand' => $brand,
             'model' => $model === '' ? null : $model,
             'category_id' => $categoryId,
             'price' => $price,

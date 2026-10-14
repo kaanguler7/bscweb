@@ -26,11 +26,16 @@ $isEditing = $editingProduct !== null;
                      <div class="row g-3">
                         <div class="col-md-6">
                            <label class="form-label">Ürün Adı</label>
-                           <input class="form-control" type="text" name="name" required value="<?= htmlspecialchars((string) ($editingProduct['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                           <input class="form-control" type="text" name="name" required maxlength="180" value="<?= htmlspecialchars((string) ($editingProduct['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                        </div>
+                        <div class="col-12">
+                           <label class="form-label" for="product-description">Ürün Açıklaması</label>
+                           <textarea class="form-control" id="product-description" name="description" rows="4" maxlength="5000" placeholder="Doğrulanmış parça kodları, uyumlu modeller, kondisyon ve test bilgilerini yazın."><?= htmlspecialchars((string) ($editingProduct['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                           <div class="form-text">Yalnızca doğruladığınız teknik ve uyumluluk bilgilerini yazın. Açıklama ürün sayfasında görünür.</div>
                         </div>
                         <div class="col-md-3">
                            <label class="form-label">Marka</label>
-                           <select class="form-select" name="brand">
+                           <select class="form-select" name="brand" required>
                               <option value="">Seçmeyin</option>
                               <?php foreach ($brands as $brandOption): ?>
                                  <option value="<?= htmlspecialchars($brandOption['name'], ENT_QUOTES, 'UTF-8') ?>"
@@ -42,15 +47,16 @@ $isEditing = $editingProduct !== null;
                         </div>
                         <div class="col-md-3">
                            <label class="form-label">Model</label>
-                           <input class="form-control" type="text" name="model" value="<?= htmlspecialchars((string) ($editingProduct['model'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                           <input class="form-control" type="text" name="model" maxlength="160" value="<?= htmlspecialchars((string) ($editingProduct['model'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                         </div>
                         <div class="col-md-3">
                            <label class="form-label">Parça Kodu</label>
-                           <input class="form-control" type="text" name="part_code" value="<?= htmlspecialchars((string) ($editingProduct['part_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                           <input class="form-control" type="text" name="part_code" required maxlength="120" autocomplete="off" placeholder="Örn. 17PW26-4" value="<?= htmlspecialchars((string) ($editingProduct['part_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                           <div class="form-text">Tek ana parça kodu girin. Diğer uyumlu kodları ürün adı veya teknik bilgi alanlarına yazın.</div>
                         </div>
                         <div class="col-md-3">
                            <label class="form-label">Kategori</label>
-                           <select class="form-select" name="category_id">
+                           <select class="form-select" name="category_id" required>
                               <option value="">Seçmeyin</option>
                               <?php foreach ($categories as $category): ?>
                                  <option value="<?= (int) $category['id'] ?>" <?= ((int) ($editingProduct['category_id'] ?? 0) === (int) $category['id']) ? 'selected' : '' ?>>
@@ -61,11 +67,11 @@ $isEditing = $editingProduct !== null;
                         </div>
                         <div class="col-md-3">
                            <label class="form-label">Fiyat (TL)</label>
-                           <input class="form-control" type="number" step="0.01" min="0" name="price" id="price-input" value="<?= htmlspecialchars((string) ($editingProduct['price'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                           <input class="form-control" type="number" step="0.01" min="0.01" name="price" id="price-input" required value="<?= htmlspecialchars((string) ($editingProduct['price'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                         </div>
                         <div class="col-md-3">
                            <label class="form-label">Stok</label>
-                           <input class="form-control" type="number" min="0" name="stock" value="<?= htmlspecialchars((string) ($editingProduct['stock'] ?? 0), ENT_QUOTES, 'UTF-8') ?>">
+                           <input class="form-control" type="number" min="0" name="stock" required value="<?= htmlspecialchars((string) ($editingProduct['stock'] ?? 0), ENT_QUOTES, 'UTF-8') ?>">
                         </div>
 
                         <div class="col-md-6" id="kdv-preview-wrap" style="display:none;">
@@ -79,7 +85,10 @@ $isEditing = $editingProduct !== null;
 
                         <div class="col-md-6">
                            <label class="form-label">Ürün Fotoğrafı</label>
-                           <input class="form-control" type="file" name="image" accept="image/png,image/jpeg,image/webp">
+                           <input class="form-control" type="file" name="image" accept="image/png,image/jpeg,image/webp" <?= $isEditing ? '' : 'required' ?>>
+                           <?php if (!$isEditing): ?>
+                              <div class="form-text">Google ürün sonuçları için yeni üründe gerçek ürün fotoğrafı zorunludur.</div>
+                           <?php endif; ?>
                         </div>
                         <?php if ($isEditing && !empty($editingProduct['image_path'])): ?>
                            <div class="col-md-6">
@@ -99,6 +108,7 @@ $isEditing = $editingProduct !== null;
                               <input
                                  class="form-control"
                                  type="text"
+                                 maxlength="255"
                                  name="technical[<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>]"
                                  value="<?= htmlspecialchars((string) (($editingProduct['technical'][$code] ?? '')), ENT_QUOTES, 'UTF-8') ?>"
                               >

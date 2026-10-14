@@ -24,7 +24,13 @@ $metaKeywords = isset($metaKeywords) ? trim((string) $metaKeywords) : '';
 $canonicalUrl = isset($canonicalUrl) ? trim((string) $canonicalUrl) : '';
 $ogImage = isset($ogImage) ? trim((string) $ogImage) : '';
 $ogType = isset($ogType) ? trim((string) $ogType) : 'website';
-$metaRobots = isset($metaRobots) ? trim((string) $metaRobots) : 'index,follow';
+$privateRoutes = ['cart', 'wishlist'];
+$isPrivateRoute = in_array($currentRoute, $privateRoutes, true)
+    || str_starts_with($currentRoute, 'auth/')
+    || str_starts_with($currentRoute, 'account/');
+$metaRobots = isset($metaRobots)
+    ? trim((string) $metaRobots)
+    : ($isPrivateRoute ? 'noindex,nofollow' : 'index,follow');
 $jsonLd = isset($jsonLd) ? trim((string) $jsonLd) : '';
 ?>
 <!doctype html>
@@ -67,6 +73,7 @@ $jsonLd = isset($jsonLd) ? trim((string) $jsonLd) : '';
    <link rel="stylesheet" href="assets/css/meanmenu.css">
    <link rel="stylesheet" href="assets/css/main.css">
    <link rel="stylesheet" href="assets/css/custom/layout-header.css">
+   <link rel="stylesheet" href="assets/css/custom/mobile-nav.css">
    <link rel="stylesheet" href="assets/css/custom/layout-footer.css">
    <?php if ($pageCssFile !== null): ?>
       <link rel="stylesheet" href="assets/css/custom/<?= htmlspecialchars($pageCssFile, ENT_QUOTES, 'UTF-8') ?>">
@@ -88,6 +95,40 @@ $jsonLd = isset($jsonLd) ? trim((string) $jsonLd) : '';
             </div>
          </div>
       </div>
+   </div>
+
+   <div class="bsc-mobile-nav">
+      <a class="bsc-mobile-logo" href="index.php?route=home" aria-label="BSC Elektronik ana sayfa">
+         <img src="assets/img/logo/busebsc.png" alt="BSC Elektronik">
+      </a>
+      <button class="bsc-mobile-toggle" type="button" aria-expanded="false" aria-controls="bsc-mobile-panel">
+         Menü <span aria-hidden="true">☰</span>
+      </button>
+      <nav id="bsc-mobile-panel" class="bsc-mobile-panel" aria-label="Mobil ana menü" hidden>
+         <ul>
+            <li><a href="index.php?route=home">Ana Sayfa</a></li>
+            <li><a href="index.php?route=products">Ürünler</a></li>
+            <li><a href="index.php?route=about">Hakkımızda</a></li>
+            <li><a href="index.php?route=contact">İletişim</a></li>
+            <li><a href="index.php?route=cart">Sepet</a></li>
+            <li><a href="index.php?route=wishlist">Favorilerim (<?= (int) $wishlistCount ?>)</a></li>
+            <?php if ($loggedUser !== null): ?>
+               <li><a href="index.php?route=account/orders">Siparişlerim</a></li>
+            <?php endif; ?>
+         </ul>
+         <div class="bsc-mobile-account">
+            <?php if ($loggedUser === null): ?>
+               <a href="index.php?route=auth/login">Giriş</a>
+               <a href="index.php?route=auth/register">Kayıt Ol</a>
+            <?php else: ?>
+               <span><?= htmlspecialchars((string) $loggedUser['full_name'], ENT_QUOTES, 'UTF-8') ?></span>
+               <form method="post" action="index.php?route=auth/logout">
+                  <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                  <button type="submit">Çıkış</button>
+               </form>
+            <?php endif; ?>
+         </div>
+      </nav>
    </div>
 
    <div class="global-search-area">

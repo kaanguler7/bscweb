@@ -40,12 +40,17 @@ final class CartController extends Controller
         $productId = isset($_POST['product_id']) ? (int) $_POST['product_id'] : 0;
         $quantity = isset($_POST['quantity']) ? max(1, (int) $_POST['quantity']) : 1;
 
-        if ($productId > 0 && Product::find($productId) !== null) {
+        $product = $productId > 0 ? Product::find($productId) : null;
+        if ($product !== null && (int) ($product['stock'] ?? 0) > 0 && (float) ($product['price'] ?? 0) > 0) {
+            $quantity = min($quantity, (int) $product['stock']);
             if (!isset($_SESSION['cart'][$productId])) {
                 $_SESSION['cart'][$productId] = 0;
             }
 
             $_SESSION['cart'][$productId] += $quantity;
+            $_SESSION['cart'][$productId] = min((int) $_SESSION['cart'][$productId], (int) $product['stock']);
+        } elseif ($product !== null) {
+            $this->flash('danger', 'Bu ürün geçerli fiyat ve stok bilgisi olmadan sepete eklenemez.');
         }
 
         $this->redirect('cart');
@@ -57,10 +62,16 @@ final class CartController extends Controller
         $quantity = isset($_POST['quantity']) ? (int) $_POST['quantity'] : 1;
 
         if ($productId > 0 && isset($_SESSION['cart'][$productId])) {
+            $product = Product::find($productId);
+            if ($product === null || (int) ($product['stock'] ?? 0) <= 0 || (float) ($product['price'] ?? 0) <= 0) {
+                unset($_SESSION['cart'][$productId]);
+                $this->redirect('cart');
+            }
+
             if ($quantity <= 0) {
                 unset($_SESSION['cart'][$productId]);
             } else {
-                $_SESSION['cart'][$productId] = $quantity;
+                $_SESSION['cart'][$productId] = min($quantity, (int) $product['stock']);
             }
         }
 
@@ -171,16 +182,19 @@ final class CartController extends Controller
 
         foreach ($cart as $productId => $quantity) {
             $product = Product::find((int) $productId);
-            if ($product === null) {
+            if ($product === null || (int) ($product['stock'] ?? 0) <= 0 || (float) ($product['price'] ?? 0) <= 0) {
+                unset($_SESSION['cart'][$productId]);
                 continue;
             }
 
-            $lineTotal = (float) $product['price'] * (int) $quantity;
+            $quantity = max(1, min((int) $quantity, (int) $product['stock']));
+            $_SESSION['cart'][$productId] = $quantity;
+            $lineTotal = (float) $product['price'] * $quantity;
             $total += $lineTotal;
 
             $items[] = [
                 'product' => $product,
-                'quantity' => (int) $quantity,
+                'quantity' => $quantity,
                 'lineTotal' => $lineTotal,
             ];
         }

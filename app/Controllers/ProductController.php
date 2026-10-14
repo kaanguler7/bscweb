@@ -7,6 +7,8 @@ use App\Core\UserAuth;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Wishlist;
+use App\Support\ProductCode;
+use App\Support\ProductSeo;
 
 final class ProductController extends Controller
 {
@@ -26,19 +28,26 @@ final class ProductController extends Controller
         $categoryBreadcrumb = $category !== null ? Category::breadcrumb($category) : [];
         $paginated = Product::filterPaginated($query, $category, $selectedBrands, $inStockOnly, $page, 15);
         $userId = UserAuth::id();
-        $pageTitle = 'Urunler | BSC Elektronik';
-        $metaDescription = 'TV yedek parca urunleri: anakart, power board, led bar, t-con ve panel parcasi arama.';
+        $categoryName = $categoryBreadcrumb !== []
+            ? trim((string) $categoryBreadcrumb[count($categoryBreadcrumb) - 1]['name'])
+            : '';
+        $listingHeading = $categoryName !== '' ? $categoryName : 'TV Yedek Parçaları';
+        $categoryIntro = $categoryName !== ''
+            ? $categoryName . ' kategorisindeki TV yedek parçalarını marka, model ve parça koduna göre inceleyin.'
+            : 'TV yedek parçalarını marka, model ve parça koduna göre inceleyin.';
+        $pageTitle = $categoryName !== ''
+            ? $categoryName . ' TV Yedek Parçaları | BSC Elektronik'
+            : 'TV Yedek Parçaları | BSC Elektronik';
+        $metaDescription = $categoryIntro;
 
         $qTrimmed = trim((string) $query);
         if ($qTrimmed !== '') {
-            $pageTitle = $qTrimmed . ' | BSC Elektronik Urunler';
-            $metaDescription = $qTrimmed . ' aramaniza uygun TV yedek parcalarini BSC Elektronik urun sayfasinda inceleyin.';
+            $pageTitle = $qTrimmed . ' Arama Sonuçları | BSC Elektronik';
+            $metaDescription = $qTrimmed . ' için bulunan TV yedek parçalarını inceleyin.';
+            $listingHeading = 'Arama sonuçları: ' . $qTrimmed;
         }
 
         $canonicalParams = [];
-        if ($qTrimmed !== '') {
-            $canonicalParams['q'] = $qTrimmed;
-        }
         if ($category !== null) {
             $canonicalParams['category'] = $category;
         }
@@ -49,6 +58,8 @@ final class ProductController extends Controller
 
         $this->view('product/index', [
             'pageTitle' => $pageTitle,
+            'listingHeading' => $listingHeading,
+            'categoryIntro' => $categoryIntro,
             'products' => $paginated['items'],
             'pagination' => $paginated,
             'categories' => Category::flatForSelect(),
@@ -61,6 +72,9 @@ final class ProductController extends Controller
             'favoriteIds' => $userId !== null ? Wishlist::productIdsForUser($userId) : [],
             'metaDescription' => $metaDescription,
             'canonicalUrl' => $canonicalUrl,
+            'metaRobots' => ($qTrimmed !== '' || $selectedBrands !== [] || $inStockOnly)
+                ? 'noindex,follow'
+                : 'index,follow',
         ]);
     }
 
@@ -76,20 +90,29 @@ final class ProductController extends Controller
         }
 
         $userId = UserAuth::id();
-        $seoCodes = $this->extractSeoCodes($product);
+        $seoCodes = ProductSeo::codes($product);
+        $displayName = ProductSeo::displayName($product);
         $canonicalUrl = $this->buildAbsoluteUrl('product', ['id' => (int) $product['id']]);
         $imagePath = trim((string) ($product['image_path'] ?? ''));
         if ($imagePath === '') {
             $imagePath = 'assets/img/product/home-one/product-1.jpg';
         }
         $ogImage = $this->buildAbsoluteAssetUrl($imagePath);
-        $metaDescription = $this->buildProductMetaDescription($product, $seoCodes);
+        $metaDescription = ProductSeo::metaDescription($product);
         $metaKeywords = implode(', ', array_slice($seoCodes, 0, 14));
-        $jsonLd = $this->buildProductJsonLd($product, $seoCodes, $canonicalUrl, $ogImage);
+        $jsonLd = $this->buildProductJsonLd(
+            $product,
+            $seoCodes,
+            $canonicalUrl,
+            $ogImage,
+            $metaDescription,
+            $displayName
+        );
 
         $this->view('product/show', [
-            'pageTitle' => $product['name'] . ' | BSC Elektronik',
+            'pageTitle' => ProductSeo::pageTitle($product),
             'product' => $product,
+            'displayName' => $displayName,
             'categories' => Category::flatForSelect(),
             'isFavorite' => $userId !== null ? Wishlist::exists($userId, (int) $product['id']) : false,
             'seoCodes' => $seoCodes,
@@ -103,120 +126,33 @@ final class ProductController extends Controller
     }
 
     /**
-     * @return array<int, string>
-     */
-    private function extractSeoCodes(array $product): array
-    {
-        $candidates = [];
-        $name = trim((string) ($product['name'] ?? ''));
-        $partCode = trim((string) ($product['part_code'] ?? ''));
-        $model = trim((string) ($product['model'] ?? ''));
-        $brand = trim((string) ($product['brand'] ?? ''));
-        $technical = isset($product['technical']) && is_array($product['technical']) ? $product['technical'] : [];
-
-        if ($name !== '') {
-            $candidates[] = $name;
-            foreach (preg_split('/\s*[,;|]+\s*/u', $name) ?: [] as $segment) {
-                $segment = trim((string) $segment);
-                if ($segment !== '') {
-                    $candidates[] = $segment;
-                }
-            }
-        }
-        if ($partCode !== '') {
-            $candidates[] = $partCode;
-        }
-        if ($model !== '') {
-            $candidates[] = $model;
-        }
-        if ($brand !== '') {
-            $candidates[] = $brand;
-        }
-
-        foreach (['part_number', 'supplier_code', 'tv_panel_model', 'known_brand_model'] as $codeKey) {
-            $value = trim((string) ($technical[$codeKey] ?? ''));
-            if ($value !== '') {
-                $candidates[] = $value;
-            }
-        }
-
-        $unique = [];
-        $seen = [];
-        foreach ($candidates as $candidate) {
-            $candidate = preg_replace('/\s+/u', ' ', trim((string) $candidate));
-            if ($candidate === null || $candidate === '' || mb_strlen($candidate, 'UTF-8') < 2) {
-                continue;
-            }
-
-            $normalized = mb_strtolower($candidate, 'UTF-8');
-            if (isset($seen[$normalized])) {
-                continue;
-            }
-            $seen[$normalized] = true;
-            $unique[] = $candidate;
-
-            if (count($unique) >= 24) {
-                break;
-            }
-        }
-
-        return $unique;
-    }
-
-    /**
      * @param array<int, string> $seoCodes
      */
-    private function buildProductMetaDescription(array $product, array $seoCodes): string
-    {
-        $name = trim((string) ($product['name'] ?? ''));
-        $brand = trim((string) ($product['brand'] ?? ''));
-        $model = trim((string) ($product['model'] ?? ''));
-        $codesText = implode(', ', array_slice($seoCodes, 0, 4));
-
-        $parts = [];
-        if ($name !== '') {
-            $parts[] = $name;
-        }
-        if ($brand !== '') {
-            $parts[] = $brand;
-        }
-        if ($model !== '') {
-            $parts[] = $model;
-        }
-
-        $description = trim(implode(' - ', $parts));
-        if ($codesText !== '') {
-            $description .= '. Uyumlu kodlar: ' . $codesText . '.';
-        }
-        $description .= ' BSC Elektronik urun detaylari ve siparis secenekleri.';
-
-        if (mb_strlen($description, 'UTF-8') > 300) {
-            $description = mb_substr($description, 0, 297, 'UTF-8') . '...';
-        }
-
-        return trim($description);
-    }
-
-    /**
-     * @param array<int, string> $seoCodes
-     */
-    private function buildProductJsonLd(array $product, array $seoCodes, string $canonicalUrl, string $ogImage): string
+    private function buildProductJsonLd(
+        array $product,
+        array $seoCodes,
+        string $canonicalUrl,
+        string $ogImage,
+        string $description,
+        string $displayName
+    ): string
     {
         $technical = isset($product['technical']) && is_array($product['technical']) ? $product['technical'] : [];
         $partNumber = trim((string) ($technical['part_number'] ?? ''));
         $supplierCode = trim((string) ($technical['supplier_code'] ?? ''));
         $partCode = trim((string) ($product['part_code'] ?? ''));
-        $sku = $partCode !== '' ? $partCode : ($supplierCode !== '' ? $supplierCode : null);
-        $mpn = $partNumber !== '' ? $partNumber : ($partCode !== '' ? $partCode : null);
+        $sku = ProductCode::firstIdentifier($partCode, $supplierCode);
+        $mpn = ProductCode::firstIdentifier($partNumber, $partCode);
         $availability = ((int) ($product['stock'] ?? 0) > 0)
             ? 'https://schema.org/InStock'
             : 'https://schema.org/OutOfStock';
-        $price = number_format((float) ($product['price'] ?? 0), 2, '.', '');
+        $price = number_format(Product::priceWithKdv((float) ($product['price'] ?? 0)), 2, '.', '');
 
         $data = [
             '@context' => 'https://schema.org',
             '@type' => 'Product',
-            'name' => (string) ($product['name'] ?? ''),
+            'name' => $displayName,
+            'description' => $description,
             'url' => $canonicalUrl,
             'image' => $ogImage,
             'brand' => [
@@ -227,14 +163,17 @@ final class ProductController extends Controller
             'mpn' => $mpn,
             'category' => (string) ($product['category_name'] ?? ''),
             'keywords' => implode(', ', array_slice($seoCodes, 0, 18)),
-            'offers' => [
+        ];
+
+        if ((float) ($product['price'] ?? 0) > 0) {
+            $data['offers'] = [
                 '@type' => 'Offer',
                 'priceCurrency' => 'TRY',
                 'price' => $price,
                 'availability' => $availability,
                 'url' => $canonicalUrl,
-            ],
-        ];
+            ];
+        }
 
         return (string) json_encode(
             $data,

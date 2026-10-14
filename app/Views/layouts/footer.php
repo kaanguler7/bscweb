@@ -34,6 +34,7 @@
 <script src="assets/js/jquery-ui.js"></script>
 <script src="assets/js/main.js"></script>
 <script src="assets/js/custom/layout-search.js"></script>
+<script src="assets/js/custom/mobile-nav.js"></script>
 <script src="assets/js/custom/wishlist-toggle.js"></script>
 <?php
    if (!isset($currentRoute) || !is_string($currentRoute) || $currentRoute === '') {
