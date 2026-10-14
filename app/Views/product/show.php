@@ -7,6 +7,10 @@ $displayNameValue = trim((string) ($displayName ?? $product['name'] ?? ''));
 $whatsappPhone = '905359714587';
 $seoCodes = isset($seoCodes) && is_array($seoCodes) ? $seoCodes : [];
 $isPurchasable = (int) ($product['stock'] ?? 0) > 0 && (float) ($product['price'] ?? 0) > 0;
+$technicalRows = array_values(array_filter(
+   Product::technicalDefinitions(),
+   static fn(array $definition): bool => trim((string) ($product['technical'][(string) $definition['code']] ?? '')) !== ''
+));
 ?>
 <section class="shop-details-area pt-50 pb-50">
    <div class="container">
@@ -37,7 +41,7 @@ $isPurchasable = (int) ($product['stock'] ?? 0) > 0 && (float) ($product['price'
                </p>
                <?php if ($seoCodes !== []): ?>
                   <div class="detail-seo-codes-wrap">
-                     <strong>Uyumlu Kodlar:</strong>
+                     <strong>Parça ve Model Kodları:</strong>
                      <div class="detail-seo-codes">
                         <?php foreach (array_slice($seoCodes, 0, 12) as $code): ?>
                            <span class="detail-seo-code"><?= htmlspecialchars((string) $code, ENT_QUOTES, 'UTF-8') ?></span>
@@ -132,6 +136,7 @@ $isPurchasable = (int) ($product['stock'] ?? 0) > 0 && (float) ($product['price'
                <p><?= nl2br(htmlspecialchars((string) $product['description'], ENT_QUOTES, 'UTF-8')) ?></p>
             </section>
          <?php endif; ?>
+         <?php if ($technicalRows !== []): ?>
          <div class="row g-3">
             <div class="col-lg-8">
                <table class="spec-table">
@@ -141,7 +146,7 @@ $isPurchasable = (int) ($product['stock'] ?? 0) > 0 && (float) ($product['price'
                      </tr>
                   </thead>
                   <tbody>
-                     <?php foreach (Product::technicalDefinitions() as $definition): ?>
+                     <?php foreach ($technicalRows as $definition): ?>
                         <?php $code = (string) $definition['code']; ?>
                         <?php $value = trim((string) ($product['technical'][$code] ?? '')); ?>
                         <?php if ($value === '') { continue; } ?>
@@ -153,6 +158,7 @@ $isPurchasable = (int) ($product['stock'] ?? 0) > 0 && (float) ($product['price'
                   </tbody>
                </table>
             </div>
+            <?php if (trim((string) ($product['technical']['supplier_code'] ?? '')) !== ''): ?>
             <div class="col-lg-4">
                <div class="spec-side">
                   <h5 class="mb-3">Ürün Filtreleri</h5>
@@ -161,7 +167,9 @@ $isPurchasable = (int) ($product['stock'] ?? 0) > 0 && (float) ($product['price'
                   </p>
                </div>
             </div>
+            <?php endif; ?>
          </div>
+         <?php endif; ?>
       </div>
    </div>
 </section>

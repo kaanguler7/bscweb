@@ -81,7 +81,7 @@ final class ProductSeo
             }
         }
 
-        $description .= '. Stok, fiyat, uyumluluk ve sipariş bilgilerini BSC Elektronik\'te inceleyin.';
+        $description .= '. Ürün fotoğrafı, stok ve fiyat bilgilerini BSC Elektronik\'te inceleyin.';
         if (mb_strlen($description, 'UTF-8') > self::MAX_DESCRIPTION_LENGTH) {
             $description = rtrim(mb_substr($description, 0, self::MAX_DESCRIPTION_LENGTH - 3, 'UTF-8')) . '...';
         }
@@ -95,23 +95,14 @@ final class ProductSeo
     public static function codes(array $product): array
     {
         $technical = isset($product['technical']) && is_array($product['technical']) ? $product['technical'] : [];
-        $name = self::clean($product['name'] ?? '');
         $candidates = [
             self::primaryCode($product),
         ];
-
-        if ($name !== '') {
-            $candidates[] = $name;
-            foreach (preg_split('/\s*[,;|]+\s*/u', $name) ?: [] as $segment) {
-                $candidates[] = $segment;
-            }
-        }
 
         foreach (['part_number', 'supplier_code', 'tv_panel_model', 'known_brand_model'] as $key) {
             $candidates[] = $technical[$key] ?? '';
         }
         $candidates[] = $product['model'] ?? '';
-        $candidates[] = $product['brand'] ?? '';
 
         return array_slice(self::uniqueNonEmpty($candidates), 0, 24);
     }
