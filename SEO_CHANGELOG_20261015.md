@@ -14,6 +14,7 @@ Veritabanı değişiklikleri `database/migrations/20261015_fill_catalog_facts.sq
 - 57 ürün fotoğrafının 720 piksel WebP liste sürümü oluşturuldu. Toplam görsel dosyası boyutu 7,61 MB özgün fotoğraftan 2,28 MB küçük sürüme indi (%70 azaltma). Ürün detayında özgün fotoğraf korunur.
 - Ana sayfa, ürün listesi ve favoriler küçük sürümleri kullanır. Yeni yüklemelerde küçük sürüm otomatik oluşturulur; eski fotoğraf silinince ilgili küçük sürüm de silinir.
 - Font Awesome için yalnızca WOFF2 dosyaları bırakıldı. 20 eski font dosyası ve sayfalarda yüklenmeyen 21 eski tema CSS/JS dosyası kaynak depodan çıkarıldı. `phpbb`, `cgi-bin` ve eski uygulama dizinlerine dokunulmadı.
+- Aynı 41 eski dosya canlı sunucuda DirectAdmin'in kurtarılabilir çöp kutusuna taşındı; geçici dağıtım ZIP dosyası da kaldırıldı. Canlı ana sayfa, ürün listesi ve ürün detayındaki bağlantılı CSS, JS ve görseller tekrar kontrol edildi; kırık varlık bağlantısı bulunmadı.
 
 ## Doğrulama ve Search Console
 
