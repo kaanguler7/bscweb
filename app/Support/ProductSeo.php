@@ -99,7 +99,7 @@ final class ProductSeo
             self::primaryCode($product),
         ];
 
-        foreach (['part_number', 'supplier_code', 'tv_panel_model', 'known_brand_model'] as $key) {
+        foreach (['part_number', 'supplier_code', 'alternate_code', 'tv_panel_model', 'known_brand_model'] as $key) {
             $candidates[] = $technical[$key] ?? '';
         }
         $candidates[] = $product['model'] ?? '';
