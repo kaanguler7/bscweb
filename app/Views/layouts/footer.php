@@ -20,19 +20,10 @@
    <i class="fab fa-whatsapp" aria-hidden="true"></i>
    <span>WhatsApp Destek Hattı</span>
 </a>
-<script src="assets/js/jquery.js"></script>
-<script src="assets/js/waypoints.js"></script>
-<script src="assets/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/meanmenu.js"></script>
+<?php if (isset($currentRoute) && $currentRoute === 'home'): ?>
 <script src="assets/js/swiper-bundle.js"></script>
-<script src="assets/js/slick.js"></script>
-<script src="assets/js/magnific-popup.js"></script>
-<script src="assets/js/counterup.js"></script>
-<script src="assets/js/wow.js"></script>
-<script src="assets/js/countdown.js"></script>
-<script src="assets/js/nice-select.js"></script>
-<script src="assets/js/jquery-ui.js"></script>
-<script src="assets/js/main.js"></script>
+<?php endif; ?>
+<script src="assets/js/custom/core-ui.js"></script>
 <script src="assets/js/custom/layout-search.js"></script>
 <script src="assets/js/custom/mobile-nav.js"></script>
 <script src="assets/js/custom/wishlist-toggle.js"></script>

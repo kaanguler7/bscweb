@@ -62,15 +62,11 @@ $jsonLd = isset($jsonLd) ? trim((string) $jsonLd) : '';
    <?php endif; ?>
    <link rel="icon" type="image/png" href="assets/img/logo/BSC_elektronik.png?v=1">
    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-   <link rel="stylesheet" href="assets/css/animate.css">
-   <link rel="stylesheet" href="assets/css/swiper-bundle.css">
-   <link rel="stylesheet" href="assets/css/slick.css">
-   <link rel="stylesheet" href="assets/css/nice-select.css">
+   <?php if ($currentRoute === 'home'): ?>
+      <link rel="stylesheet" href="assets/css/swiper-bundle.css">
+   <?php endif; ?>
    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
-   <link rel="stylesheet" href="assets/css/magnific-popup.css">
    <link rel="stylesheet" href="assets/css/spacing.css">
-   <link rel="stylesheet" href="assets/css/jquery-ui.css">
-   <link rel="stylesheet" href="assets/css/meanmenu.css">
    <link rel="stylesheet" href="assets/css/main.css">
    <link rel="stylesheet" href="assets/css/custom/layout-header.css">
    <link rel="stylesheet" href="assets/css/custom/mobile-nav.css">
@@ -80,9 +76,6 @@ $jsonLd = isset($jsonLd) ? trim((string) $jsonLd) : '';
    <?php endif; ?>
 </head>
 <body>
-<div id="preloader">
-   <div class="preloader"><span></span><span></span></div>
-</div>
 <button class="scroll-top scroll-to-target" data-target="html"><i class="fas fa-angle-up"></i></button>
 <header>
    <div class="header-top space-bg">
