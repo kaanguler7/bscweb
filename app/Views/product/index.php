@@ -90,7 +90,7 @@
                <?php endif; ?>
 
                <?php foreach ($products as $product): ?>
-                  <?php $image = $product['image_path'] ?: 'assets/img/product/home-one/product-1.jpg'; ?>
+                  <?php $image = \App\Support\ProductImage::listingPath($product['image_path'] ?? null); ?>
                   <div class="col-xl-4 col-md-6">
                      <div class="shop-product-card">
                         <div class="shop-product-thumb">

@@ -15,10 +15,10 @@
       <?php else: ?>
          <div class="row g-4">
             <?php foreach ($products as $product): ?>
-               <?php $image = $product['image_path'] ?: 'assets/img/product/home-one/product-1.jpg'; ?>
+               <?php $image = \App\Support\ProductImage::listingPath($product['image_path'] ?? null); ?>
                <div class="col-xl-3 col-md-4 col-sm-6" data-wishlist-item="<?= (int) $product['id'] ?>">
                   <div class="card h-100">
-                     <img src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" class="card-img-top" style="height:200px;object-fit:cover;" alt="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8') ?>">
+                     <img src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" class="card-img-top" style="height:200px;object-fit:cover;" alt="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy" decoding="async">
                      <div class="card-body d-flex flex-column">
                         <h6 class="card-title"><?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8') ?></h6>
                         <p class="text-muted mb-2"><?= htmlspecialchars((string) ($product['brand'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></p>

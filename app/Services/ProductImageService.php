@@ -54,6 +54,14 @@ final class ProductImageService
         $image->scaleDown(width: 1200, height: 1200);
         $image->toWebp(85)->save($absolutePath);
 
+        $thumbnailDir = $absoluteDir . DIRECTORY_SEPARATOR . 'thumbs';
+        if (!is_dir($thumbnailDir)) {
+            mkdir($thumbnailDir, 0775, true);
+        }
+        $thumbnail = $this->manager->read($tmpPath);
+        $thumbnail->scaleDown(width: 720, height: 720);
+        $thumbnail->toWebp(78)->save($thumbnailDir . DIRECTORY_SEPARATOR . $fileName);
+
         if ($oldPath !== null && str_starts_with($oldPath, $relativeDir . '/')) {
             $this->deleteImage($oldPath);
         }
@@ -75,6 +83,11 @@ final class ProductImageService
         $absolutePath = App::basePath($path);
         if (is_file($absolutePath)) {
             unlink($absolutePath);
+        }
+
+        $thumbnailPath = App::basePath($relativeDir . '/thumbs/' . basename($path));
+        if (is_file($thumbnailPath)) {
+            unlink($thumbnailPath);
         }
     }
 }
