@@ -61,6 +61,9 @@ $jsonLd = isset($jsonLd) ? trim((string) $jsonLd) : '';
       <script type="application/ld+json"><?= $jsonLd ?></script>
    <?php endif; ?>
    <link rel="icon" type="image/png" href="assets/img/logo/BSC_elektronik.png?v=1">
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap">
    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
    <?php if ($currentRoute === 'home'): ?>
       <link rel="stylesheet" href="assets/css/swiper-bundle.css">

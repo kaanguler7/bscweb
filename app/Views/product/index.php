@@ -98,7 +98,7 @@
                               <span class="out-of-stock-ribbon">Stokta Yok</span>
                            <?php endif; ?>
                            <a href="index.php?route=product&id=<?= (int) $product['id'] ?>">
-                              <img src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>">
+                              <img src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy" decoding="async">
                            </a>
                         </div>
                         <div class="shop-product-info">

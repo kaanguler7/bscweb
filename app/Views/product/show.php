@@ -20,7 +20,7 @@ $technicalRows = array_values(array_filter(
                <?php if ((int) $product['stock'] <= 0): ?>
                   <span class="out-of-stock-ribbon">Stokta Yok</span>
                <?php endif; ?>
-               <img class="detail-image-zoom-target" src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($displayNameValue, ENT_QUOTES, 'UTF-8') ?>">
+               <img class="detail-image-zoom-target" src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($displayNameValue, ENT_QUOTES, 'UTF-8') ?>" fetchpriority="high" decoding="async">
             </div>
          </div>
 
