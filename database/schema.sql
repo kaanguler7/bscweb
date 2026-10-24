@@ -125,6 +125,14 @@ CREATE TABLE IF NOT EXISTS daily_visitors (
   UNIQUE KEY uq_daily_visitor (visit_date, session_id)
 );
 
+CREATE TABLE IF NOT EXISTS daily_public_visitors (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  visit_date DATE NOT NULL,
+  visitor_hash CHAR(64) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_daily_public_visitor (visit_date, visitor_hash)
+);
+
 CREATE TABLE IF NOT EXISTS admin_users (
   id INT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(120) NOT NULL UNIQUE,

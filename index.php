@@ -23,21 +23,28 @@ App::setConfig($config);
 User::ensureSchema();
 PasswordResetToken::ensureSchema();
 
-// Kalıcı cookie ile ziyaretçi tanımlama (1 yıl geçerli)
-if (!isset($_COOKIE['bsc_visitor_id'])) {
-    $visitorId = bin2hex(random_bytes(16));
-    setcookie('bsc_visitor_id', $visitorId, [
-        'expires' => time() + 365 * 24 * 60 * 60,
-        'path' => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-} else {
-    $visitorId = $_COOKIE['bsc_visitor_id'];
-}
-Visitor::logDailyVisit($visitorId);
-
 $route = $_GET['route'] ?? 'home';
+$eligibleVisitorId = null;
+if (Visitor::shouldCountPageView(
+    (string) $route,
+    (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'),
+    (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
+    (string) ($_SERVER['HTTP_ACCEPT'] ?? ''),
+    !empty($_SESSION['admin_user_id'])
+)) {
+    $visitorId = (string) ($_COOKIE['bsc_visitor_id'] ?? '');
+    if (preg_match('/^[a-f0-9]{32}$/', $visitorId) !== 1) {
+        $visitorId = bin2hex(random_bytes(16));
+        setcookie('bsc_visitor_id', $visitorId, [
+            'expires' => time() + 365 * 24 * 60 * 60,
+            'path' => '/',
+            'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+    $eligibleVisitorId = $visitorId;
+}
 
 $router = new Router($config);
 $router->get('home', [\App\Controllers\HomeController::class, 'index']);
@@ -103,3 +110,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 
 $router->dispatch($route, $_SERVER['REQUEST_METHOD'] ?? 'GET');
+
+if ($eligibleVisitorId !== null && http_response_code() === 200) {
+    Visitor::logDailyVisit($eligibleVisitorId);
+}

@@ -186,8 +186,9 @@
          <div class="col-xl-3">
             <div class="card mb-20">
                <div class="card-body">
-                  <h5 class="mb-10">Günlük Giriş</h5>
+                  <h5 class="mb-10">Bugünkü tahmini tekil ziyaretçi</h5>
                   <h3><?= (int) $todayVisitors ?> kişi</h3>
+                  <small>Türkiye saatine göre; bilinen botlar ve yönetici ziyaretleri hariç.</small>
                </div>
             </div>
             <div class="card mb-20">
